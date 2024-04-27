@@ -1,7 +1,7 @@
 import random as random
 
 
-def maze_gen(x, y, directions):
+def step_one_maze_gen(x, y, directions):
     maze = []
     for i in range(0, y):
         maze.append([])
@@ -23,8 +23,6 @@ def maze_gen(x, y, directions):
             Px, Py = new_Px, new_Py
         maze[Py][Px] = ' '
 
-    maze[Sy][Sx] = 'S'
-    maze[Ey][Ex] = 'E'
     return maze, Sx, Sy, Ex, Ey
 
 
@@ -36,17 +34,15 @@ def valid_move(maze, x, y, check_for_space):
     return False
 
 
-def is_solvable(maze, x, y, Ex, Ey):
+def is_solvable(maze, x, y, Ex, Ey, solution):
     # assigns the starting position
     path = [[y, x]]
     possible_moves = [get_possible_moves(maze, path, x, y)]
 
     invalid_path = []
     next_move = ''
-    c = 0
     # loops while maze is not solved
     while x != Ex or y != Ey:
-        c += 1
         # if all the direction possible of the position of the player were taken, go to the previous position
         if possible_moves[-1] == []:
 
@@ -83,16 +79,13 @@ def is_solvable(maze, x, y, Ex, Ey):
                 x, y = new_Px, new_Py
                 # move the player
                 path.append([y, x])
-                if [y, x] != [Ey, Ey]:
+                if [y, x] != [Ey, Ey] and solution:
                     maze[path[-1][0]][path[-1][1]] = '@'
                 # add all possibles moves
                 possible_moves.append(get_possible_moves(maze, path, x, y))
 
             next_move = ''
 
-    print_maze(maze)
-    print(c)
-    save_in_file(maze, 'maze_created.txt')
     return True
 
 
@@ -143,18 +136,64 @@ def print_maze(maze):
     print('')
 
 
+def step_two_maze_gen(maze, Sx, Sy, Ex, Ey):
+    for k, l in [' ', '#'], ['#', ' ']:
+        for i in range(len(maze)):
+            for j in range(len(maze[i])):
+                if check_adj(maze, j, i, k) < 2:
+                    x, y = random_adj(j, i, len(maze[i]), len(maze))
+                    maze[y][x] = k
+                    if not is_solvable(maze, Sx, Sy, Ex, Ey, False):
+                        maze[y][x] = l
+
+    return maze
+
+
+def check_adj(maze, x, y, pattern):
+    sum = 0
+    for i in range(-1, 2):
+        if 0 <= y+i < len(maze):
+            for j in range(-1, 2):
+                if 0 <= x+j < len(maze[0]):
+                    if maze[y+i][x+j] == pattern:
+                        sum += 1
+
+    return sum
+
+
+def random_adj(x, y, Dx, Dy):
+    x = random.randint(x-1, x+1)
+    y = random.randint(y-1, y+1)
+
+    if 0 >= x:
+        x += 1
+    elif x >= Dx:
+        x -= 1
+
+    if 0 >= y:
+        y += 1
+    elif y >= Dy:
+        y -= 1
+
+    return x, y
+
+
 def main():
-    x = random.randint(5, 100)
-    y = random.randint(5, 100)
-    x = 100
-    y = 100
+    Dx = random.randint(5, 100)
+    Dy = random.randint(5, 100)
+    Dx = 10
+    Dy = 11
     directions = ['W', 'A', 'S', 'D']
-    maze, Sx, Sy, Ex, Ey = maze_gen(x, y, directions)
+    maze, Sx, Sy, Ex, Ey = step_one_maze_gen(Dx, Dy, directions)
+    maze = step_two_maze_gen(maze, Sx, Sy, Ex, Ey)
+    maze[Sy][Sx] = 'S'
+    maze[Ey][Ex] = 'E'
     save_in_file(maze, 'maze_created.txt')
 
-    print_maze(maze)
-    print('\n |||||||||||||||||||||||||||||||\n')
-    if is_solvable(maze, Sx, Sy, Ex, Ey) == True:
+    if is_solvable(maze, Sx, Sy, Ex, Ey, True) == True:
+        print_maze(maze)
+        save_in_file(maze, 'maze_created.txt')
+        print('\n')
         print("Maze is Valid")
     else:
         print("Maze is Invalid")
