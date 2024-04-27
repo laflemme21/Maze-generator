@@ -40,6 +40,8 @@ def is_solvable(maze, x, y, Ex, Ey):
     # assigns the starting position
     path = [[y, x]]
     possible_moves = [get_possible_moves(maze, path, x, y)]
+
+    invalid_path = []
     next_move = ''
     c = 0
     # loops while maze is not solved
@@ -50,8 +52,11 @@ def is_solvable(maze, x, y, Ex, Ey):
 
             maze[path[-1][0]][path[-1][1]] = ' '
 
+            invalid_path.append(path[-1])
+
             possible_moves.pop(-1)
             path.pop(-1)
+
             # if all possible paths were taken then unsolvable
             if path == []:
                 return False
@@ -72,7 +77,8 @@ def is_solvable(maze, x, y, Ex, Ey):
                     path.pop(-1)
                     possible_moves.pop(-1)
                 y, x = path[-1][0], path[-1][1]
-            elif valid_move(maze, new_Px, new_Py, True):
+
+            elif valid_move(maze, new_Px, new_Py, True) and [new_Py, new_Px] not in invalid_path:
                 # assign coordinates to new
                 x, y = new_Px, new_Py
                 # move the player
@@ -140,17 +146,18 @@ def print_maze(maze):
 def main():
     x = random.randint(5, 100)
     y = random.randint(5, 100)
-    x = 40
-    y = 40
+    x = 100
+    y = 100
     directions = ['W', 'A', 'S', 'D']
     maze, Sx, Sy, Ex, Ey = maze_gen(x, y, directions)
     save_in_file(maze, 'maze_created.txt')
+
     print_maze(maze)
     print('\n |||||||||||||||||||||||||||||||\n')
     if is_solvable(maze, Sx, Sy, Ex, Ey) == True:
         print("Maze is Valid")
     else:
-        print("wtf just happened")
+        print("Maze is Invalid")
 
 
 main()
