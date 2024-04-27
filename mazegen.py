@@ -10,11 +10,20 @@ def step_one_maze_gen(x, y, directions):
 
     Sx = random.randint(0, x-1)
     Sy = random.randint(0, y-1)
-    Ex = random.randint(0, x-1)
-    Ey = random.randint(0, y-1)
+
+    if Sx <= len(maze[0])//2:
+        Ex = random.randint(len(maze[0])//2, x-1)
+    else:
+        Ex = random.randint(0, len(maze[0])//2)
+
+    if Sy <= len(maze)//2:
+        Ey = random.randint(len(maze)//2, y-1)
+    else:
+        Ey = random.randint(0, len(maze)//2)
 
     Py = Sy
     Px = Sx
+    maze[Py][Px] = ' '
 
     while Py != Ey or Px != Ex:
         direction = random.choice(directions)
@@ -34,15 +43,22 @@ def valid_move(maze, x, y, check_for_space):
     return False
 
 
-def is_solvable(maze, x, y, Ex, Ey, solution):
-    # assigns the starting position
-    path = [[y, x]]
-    possible_moves = [get_possible_moves(maze, path, x, y)]
-
+def is_solvable(maze, x, y, Ex, Ey, is_solution_outputted, previous_solution):
+    path = []
     invalid_path = []
+    possible_moves = []
+    for i in previous_solution:
+        if maze[i[0]][i[1]] == '#':
+            break
+        else:
+            path.append(i)
+            possible_moves.append(get_possible_moves(maze, path, i[1], i[0]))
+    # assigns the starting position
+
     next_move = ''
     # loops while maze is not solved
-    while x != Ex or y != Ey:
+    y, x = path[-1][0], path[-1][1]
+    while path[-1][1] != Ex or path[-1][0] != Ey:
         # if all the direction possible of the position of the player were taken, go to the previous position
         if possible_moves[-1] == []:
 
@@ -55,7 +71,7 @@ def is_solvable(maze, x, y, Ex, Ey, solution):
 
             # if all possible paths were taken then unsolvable
             if path == []:
-                return False
+                return [], False
             y, x = path[-1][0], path[-1][1]
         else:
             # move and mark it as taken
@@ -79,14 +95,14 @@ def is_solvable(maze, x, y, Ex, Ey, solution):
                 x, y = new_Px, new_Py
                 # move the player
                 path.append([y, x])
-                if [y, x] != [Ey, Ey] and solution:
+                if [y, x] != [Ey, Ey] and is_solution_outputted:
                     maze[path[-1][0]][path[-1][1]] = '@'
                 # add all possibles moves
                 possible_moves.append(get_possible_moves(maze, path, x, y))
 
             next_move = ''
 
-    return True
+    return path, True
 
 
 def get_possible_moves(maze, path, x, y):
@@ -137,14 +153,23 @@ def print_maze(maze):
 
 
 def step_two_maze_gen(maze, Sx, Sy, Ex, Ey):
-    for k, l in [' ', '#'], ['#', ' ']:
+    path_ = [[Sy, Sx]]
+    for pattern, pattern_opp, pattern_amount in [' ', '#', 4], ['#', ' ', 2]:
         for i in range(len(maze)):
             for j in range(len(maze[i])):
-                if check_adj(maze, j, i, k) < 2:
-                    x, y = random_adj(j, i, len(maze[i]), len(maze))
-                    maze[y][x] = k
-                    if not is_solvable(maze, Sx, Sy, Ex, Ey, False):
-                        maze[y][x] = l
+                if check_adj(maze, j, i, pattern) <= pattern_amount and [j, i] not in path_:
+                    # random position
+                    x, y = random_adj(
+                        j, i, len(maze[i]), len(maze), Sx, Sy)
+                    # assign it to the pattern populating
+                    maze[y][x] = pattern
+                    # store the solution if true
+                    new_path, boolean = is_solvable(
+                        maze, Sx, Sy, Ex, Ey, False, path_)
+                    if not boolean:
+                        maze[y][x] = pattern_opp
+                    else:
+                        path_ = new_path
 
     return maze
 
@@ -161,7 +186,7 @@ def check_adj(maze, x, y, pattern):
     return sum
 
 
-def random_adj(x, y, Dx, Dy):
+def random_adj(x, y, Dx, Dy, Sx, Sy):
     x = random.randint(x-1, x+1)
     y = random.randint(y-1, y+1)
 
@@ -175,27 +200,30 @@ def random_adj(x, y, Dx, Dy):
     elif y >= Dy:
         y -= 1
 
+    if x == Sx and Sy == y:
+        return random_adj(x, y, Dx, Dy, Sx, Sy)
+
     return x, y
 
 
 def main():
     Dx = random.randint(5, 100)
     Dy = random.randint(5, 100)
-    Dx = 10
-    Dy = 11
     directions = ['W', 'A', 'S', 'D']
     maze, Sx, Sy, Ex, Ey = step_one_maze_gen(Dx, Dy, directions)
     maze = step_two_maze_gen(maze, Sx, Sy, Ex, Ey)
     maze[Sy][Sx] = 'S'
     maze[Ey][Ex] = 'E'
     save_in_file(maze, 'maze_created.txt')
-
-    if is_solvable(maze, Sx, Sy, Ex, Ey, True) == True:
+    z, b = is_solvable(maze, Sx, Sy, Ex, Ey, True, [[Sy, Sx]])
+    if b:
         print_maze(maze)
-        save_in_file(maze, 'maze_created.txt')
         print('\n')
         print("Maze is Valid")
+        save_in_file(maze, 'maze_created.txt')
     else:
+        print_maze(maze)
+        print('\n')
         print("Maze is Invalid")
 
 
