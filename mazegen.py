@@ -1,6 +1,4 @@
 import random as random
-import sys
-sys.setrecursionlimit(1001)
 
 
 def maze_gen(x, y, directions):
@@ -27,34 +25,78 @@ def maze_gen(x, y, directions):
 
     maze[Sy][Sx] = 'S'
     maze[Ey][Ex] = 'E'
-    for i in range(0, y):
-        print('')
-        for j in range(0, x):
-            print(maze[i][j], end='')
-    print('')
     return maze, Sx, Sy, Ex, Ey
 
 
 def valid_move(maze, x, y, check_for_space):
-    if 0 <= y < len(maze) and 0 <= x < len(maze[0]):
-        if check_for_space and maze[y][x] != ' ':
+    if (0 <= y < len(maze)) and (0 <= x < len(maze[0])):
+        if check_for_space and maze[y][x] == '#':
             return False
         return True
     return False
 
 
-def is_solvable(maze, directions, x, y, last_move, Ex, Ey):
+def is_solvable(maze, x, y, Ex, Ey):
+    # assigns the starting position
+    path = [[y, x]]
+    possible_moves = [get_possible_moves(maze, path, x, y)]
+    next_move = ''
+    c = 0
+    # loops while maze is not solved
+    while x != Ex or y != Ey:
+        c += 1
+        # if all the direction possible of the position of the player were taken, go to the previous position
+        if possible_moves[-1] == []:
 
-    if x == Ex and y == Ey:
-        return True
-    else:
-        if last_move != '':
-            directions.remove(last_move)
-        for direction in directions:
-            new_Px, new_Py = move(x, y, direction)
-            if valid_move(maze, new_Px, new_Py, True):
+            maze[path[-1][0]][path[-1][1]] = ' '
+
+            possible_moves.pop(-1)
+            path.pop(-1)
+            # if all possible paths were taken then unsolvable
+            if path == []:
+                return False
+            y, x = path[-1][0], path[-1][1]
+        else:
+            # move and mark it as taken
+            next_move = possible_moves[-1][0]
+            possible_moves[-1].pop(0)
+
+        if next_move != '':
+            new_Px, new_Py = move(x, y, next_move)
+            if [new_Py, new_Px] in path:
+                # go back
+                while path[-1] != [new_Py, new_Px]:
+
+                    maze[path[-1][0]][path[-1][1]] = ' '
+
+                    path.pop(-1)
+                    possible_moves.pop(-1)
+                y, x = path[-1][0], path[-1][1]
+            elif valid_move(maze, new_Px, new_Py, True):
+                # assign coordinates to new
                 x, y = new_Px, new_Py
-                return is_solvable(maze, ['W', 'A', 'S', 'D'], x, y, direction, Ex, Ey)
+                # move the player
+                path.append([y, x])
+                if [y, x] != [Ey, Ey]:
+                    maze[path[-1][0]][path[-1][1]] = '@'
+                # add all possibles moves
+                possible_moves.append(get_possible_moves(maze, path, x, y))
+
+            next_move = ''
+
+    print_maze(maze)
+    print(c)
+    save_in_file(maze, 'maze_created.txt')
+    return True
+
+
+def get_possible_moves(maze, path, x, y):
+    possible_moves = []
+    for i in ['W', 'A', 'S', 'D']:
+        new_Px, new_Py = move(x, y, i)
+        if valid_move(maze, new_Px, new_Py, True) and [new_Py, new_Px] not in path:
+            possible_moves.append(i)
+    return possible_moves
 
 
 def move(x, y, direction):
@@ -87,14 +129,25 @@ def save_in_file(maze, file):
     f.close()
 
 
+def print_maze(maze):
+    for i in range(0, len(maze)):
+        print('')
+        for j in range(0, len(maze[0])):
+            print(maze[i][j], end='')
+    print('')
+
+
 def main():
     x = random.randint(5, 100)
     y = random.randint(5, 100)
+    x = 40
+    y = 40
     directions = ['W', 'A', 'S', 'D']
     maze, Sx, Sy, Ex, Ey = maze_gen(x, y, directions)
     save_in_file(maze, 'maze_created.txt')
-
-    if is_solvable(maze, directions, Sx, Sy, '', Ex, Ey):
+    print_maze(maze)
+    print('\n |||||||||||||||||||||||||||||||\n')
+    if is_solvable(maze, Sx, Sy, Ex, Ey) == True:
         print("Maze is Valid")
     else:
         print("wtf just happened")
