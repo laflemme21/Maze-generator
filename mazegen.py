@@ -1,4 +1,5 @@
 import random as random
+import sys as sys
 
 
 def step_one_maze_gen(x, y, directions):
@@ -12,14 +13,14 @@ def step_one_maze_gen(x, y, directions):
     Sy = random.randint(0, y-1)
 
     if Sx <= len(maze[0])//2:
-        Ex = random.randint(len(maze[0])//2, x-1)
+        Ex = random.randint(len(maze[0])-len(maze[0])//4, x-1)
     else:
-        Ex = random.randint(0, len(maze[0])//2)
+        Ex = random.randint(0, len(maze[0])//4)
 
     if Sy <= len(maze)//2:
-        Ey = random.randint(len(maze)//2, y-1)
+        Ey = random.randint(len(maze)-len(maze)//4, y-1)
     else:
-        Ey = random.randint(0, len(maze)//2)
+        Ey = random.randint(0, len(maze)//4)
 
     Py = Sy
     Px = Sx
@@ -131,25 +132,14 @@ def move(x, y, direction):
     return x, y
 
 
-def save_in_file(maze, file):
-    f = open(file, 'a')
+def save_in_file(maze, file, param):
+    f = open(file, param)
     for i in range(0, len(maze)):
         for j in range(0, len(maze[i])):
             f.write(maze[i][j])
         f.write('\n')
-    f.write('\n')
-    f.write('====================================================================================================')
-    f.write('\n')
-    f.write('\n')
+
     f.close()
-
-
-def print_maze(maze):
-    for i in range(0, len(maze)):
-        print('')
-        for j in range(0, len(maze[0])):
-            print(maze[i][j], end='')
-    print('')
 
 
 def step_two_maze_gen(maze, Sx, Sy, Ex, Ey):
@@ -157,7 +147,7 @@ def step_two_maze_gen(maze, Sx, Sy, Ex, Ey):
     for pattern, pattern_opp, pattern_amount in [' ', '#', 4], ['#', ' ', 2]:
         for i in range(len(maze)):
             for j in range(len(maze[i])):
-                if check_adj(maze, j, i, pattern) <= pattern_amount and [j, i] not in path_:
+                if check_adj(maze, j, i, pattern) <= pattern_amount:
                     # random position
                     x, y = random_adj(
                         j, i, len(maze[i]), len(maze), Sx, Sy)
@@ -207,24 +197,18 @@ def random_adj(x, y, Dx, Dy, Sx, Sy):
 
 
 def main():
-    Dx = random.randint(5, 100)
-    Dy = random.randint(5, 100)
+    Dx = int(sys.argv[3])
+    Dy = int(sys.argv[2])
     directions = ['W', 'A', 'S', 'D']
     maze, Sx, Sy, Ex, Ey = step_one_maze_gen(Dx, Dy, directions)
     maze = step_two_maze_gen(maze, Sx, Sy, Ex, Ey)
     maze[Sy][Sx] = 'S'
     maze[Ey][Ex] = 'E'
-    save_in_file(maze, 'maze_created.txt')
-    z, b = is_solvable(maze, Sx, Sy, Ex, Ey, True, [[Sy, Sx]])
-    if b:
-        print_maze(maze)
-        print('\n')
-        print("Maze is Valid")
-        save_in_file(maze, 'maze_created.txt')
-    else:
-        print_maze(maze)
-        print('\n')
-        print("Maze is Invalid")
+    save_in_file(maze, sys.argv[1], 'w')
+    print("solution?")
+    if input() == 'y':
+        is_solvable(maze, Sx, Sy, Ex, Ey, True, [[Sy, Sx]])[1]
+        save_in_file(maze, sys.argv[1], 'a')
 
 
 main()
